@@ -7,7 +7,7 @@ std::vector<vec3> vertices;
 std::vector<vec3> normals; // for shading
 std::vector<vec2> UVs; //for texture
 
-GLuint v_model,v_view,v_proj;
+GLuint v_model, v_view, v_proj;
 
 class ObjLoader{
     public:
@@ -76,13 +76,12 @@ class ObjLoader{
 };
 
 class ObjModel {
+    public:
     GLuint start, count;
     mat4 model;
     char* filename;
-    float scale;
+    float scale, rotateY;
     mat4 translate;
-
-    public:
 
     ObjModel(char* filename, float scale, mat4 translate){
         this->filename = filename;
@@ -98,46 +97,27 @@ class ObjModel {
     }
 
     void draw(){
+        model = translate * RotateY(rotateY) * Scale(scale, scale, scale);
         glUniformMatrix4fv( v_model, 1, GL_TRUE, model );
         glDrawArrays(GL_TRIANGLES, start, count);
     }
 };
 
-
-GLuint start_1, count_1, start_2, count_2, start_3, count_3;
 GLint transform1;
 
 mat4 projection = Frustum(-0.2, 0.2, -0.2, 0.2, 0.2, 2.0);
 mat4 view = Translate(0.0, 0.0, -0.35);
 mat4 model = Translate(0.0, 0.0, 0.0);
 
-mat4 model_1, model_2, model_3;
-mat4 model_1T; //translate
-float model_1R_y;
-mat4 model_1S = Translate(0.0, 0.0, 0.0);
-
-void initModel_1(const char*);
-void drawModel_1();
-void initModel_2(const char*);
-void drawModel_2();
-void initModel_3(const char*);
-void drawModel_3();
-
-
-bool loadObj(const char* filename);
-
-
 ObjModel *modela, *modelb;
+
 void init( void )
 {
-    //initModel_1("obj/mr_krab.obj");
-    //initModel_2("obj/mr_krab.obj");
-    //initModel_3("obj/mr_krab.obj");
-
     modela = new ObjModel("obj/pohon.obj", 0.08, Translate(0,0,0));
     modelb = new ObjModel("obj/mr_krab.obj", 0.08, Translate(-0.5,-0.5,0));
     modela->init();
     modelb->init();
+
     // Create a vertex array object
     GLuint vao;
     glGenVertexArrays( 1, &vao );
@@ -191,8 +171,6 @@ void init( void )
     v_view= glGetUniformLocation( program, "vView" );
     v_proj= glGetUniformLocation( program, "vProj" );
 
-
-
     //material - static ==========================================
     vec4 light_position( 0.0, 0.0, 2.0, 0.0 );
     vec4 light_ambient( 0.2, 0.2, 0.2, 1.0 );
@@ -218,19 +196,17 @@ void init( void )
                   1, light_position );
     glUniform1f( glGetUniformLocation(program, "Shininess"),
                  material_shininess );
+
     //=============================================================
-
     glEnable( GL_DEPTH_TEST );
-
     glClearColor( 0, 0, 0, 1.0 ); /* white background */
 }
+
 //----------------------------------------------------------------------------
 void display( void )
 {
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    //model = Translate(0,-.25,0) *  Scale(.005,.005,.005);
 
-    //drawModel_1();
     modela->draw();
     modelb->draw();
 
@@ -248,26 +224,6 @@ void display( void )
     glutSwapBuffers();
 }
 
-
-//----------------------------------------------------------------------------
-void initModel_1(const char*  filename)
-{
-    start_1 = vertices.size();
-    loadObj(filename);
-    count_1 = vertices.size() - start_1;
-    model_1T = Translate(0,0,0);
-    model_1 = model_1T * Scale(.08,.08,.08);
-
-}
-
-void drawModel_1()
-{
-    model_1 = model_1T * RotateY(model_1R_y) * Scale(.08,.08,.08);
-    glUniformMatrix4fv( v_model, 1, GL_TRUE, model_1 );
-    glDrawArrays(GL_TRIANGLES, start_1, count_1);
-}
-
-//----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 void keyboard( unsigned char key, int x, int y )
 {
@@ -280,22 +236,22 @@ void keyboard( unsigned char key, int x, int y )
         break;
 
     case 'w': //maju
-        model_1T[0][3] -= sin(model_1R_y * DegreesToRadians) * -.01;
-        model_1T[2][3] += cos(model_1R_y * DegreesToRadians) * .01;
+        modela->translate[0][3] -= sin(modela->rotateY * DegreesToRadians) * -.01;
+        modela->translate[2][3] += cos(modela->rotateY * DegreesToRadians) * .01;
         break;
     case 's': //mundur
-        model_1T[0][3] -= sin(model_1R_y * DegreesToRadians) * .01;
-        model_1T[2][3] += cos(model_1R_y * DegreesToRadians) * -.01;
+        modela->translate[0][3] -= sin(modela->rotateY * DegreesToRadians) * .01;
+        modela->translate[2][3] += cos(modela->rotateY * DegreesToRadians) * -.01;
         break;
     case 'a':
-        model_1R_y += 3;
-        model_1T[0][3] -= sin(model_1R_y * DegreesToRadians) * -.01;
-        model_1T[2][3] += cos(model_1R_y * DegreesToRadians) * .01;
+        modela->rotateY += 3;
+        modela->translate[0][3] -= sin(modela->rotateY * DegreesToRadians) * -.01;
+        modela->translate[2][3] += cos(modela->rotateY * DegreesToRadians) * .01;
         break;
     case 'd':
-        model_1R_y += -3;
-        model_1T[0][3] -= sin(model_1R_y * DegreesToRadians) * -.01;
-        model_1T[2][3] += cos(model_1R_y * DegreesToRadians) * .01;
+        modela->rotateY += -3;
+        modela->translate[0][3] -= sin(modela->rotateY * DegreesToRadians) * -.01;
+        modela->translate[2][3] += cos(modela->rotateY * DegreesToRadians) * .01;
         break;
 
     }
@@ -338,73 +294,3 @@ main( int argc, char **argv )
     glutMainLoop();
     return 0;
 }
-
-
-bool loadObj(const char* filename)
-{
-    FILE * file = fopen(filename, "r");
-    if( file == NULL )
-    {
-        printf("failed to open the file !\n");
-        return false;
-    }
-    std::vector<vec3> temp_vertices;
-    std::vector<vec3> temp_normals;
-    std::vector<vec2> temp_UVs;
-    while( true )
-    {
-        char lineHeader[128];
-        int res = fscanf(file, "%s", lineHeader);
-        if (res == EOF)
-            break; // EOF = End Of File. Quit the loop.
-
-        if ( strcmp( lineHeader, "v" ) == 0 )
-        {
-            vec3 v;
-            fscanf(file, "%f %f %f\n", &v.x, &v.y, &v.z );
-            temp_vertices.push_back(v);
-        }
-        else if ( strcmp( lineHeader, "vt" ) == 0 )
-        {
-            vec2 uv;
-            fscanf(file, "%f %f\n", &uv.x, &uv.y );
-            temp_UVs.push_back(uv);
-        }
-        else if ( strcmp( lineHeader, "vn" ) == 0 )
-        {
-            vec3 n;
-            fscanf(file, "%f %f %f\n", &n.x, &n.y, &n.z );
-            temp_normals.push_back(n);
-        }
-        else if ( strcmp( lineHeader, "f" ) == 0 )
-        {
-            unsigned int vIDX[3], uvIDX[3], nIDX[3];
-            /*int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n",
-                         &vIDX[0], &uvIDX[0], &nIDX[0],
-                         &vIDX[1], &uvIDX[1], &nIDX[1],
-                         &vIDX[2], &uvIDX[2], &nIDX[2]); */
-
-            int matches = fscanf(file, "%d//%d %d//%d %d//%d\n",
-                         &vIDX[0], &nIDX[0],
-                         &vIDX[1], &nIDX[1],
-                         &vIDX[2], &nIDX[2]);
-
-            if(matches!=6)
-            {
-                printf("failed to read command !\n");
-                return false;
-            }
-            //obj file index start at 1
-            for(int a = 0; a<3 ; a++ )
-            {
-                vertices.push_back(temp_vertices[vIDX[a]-1]);
-                normals.push_back(temp_normals[nIDX[a]-1]);
-                UVs.push_back(vec2(0,0));
-            }
-        }
-    }
-    //don't forget to close the file, clean your own mess!
-    fclose(file);
-    return true;
-}
-
