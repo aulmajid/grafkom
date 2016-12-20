@@ -106,7 +106,8 @@ class ObjModel {
 GLint transform1;
 
 mat4 projection = Frustum(-0.2, 0.2, -0.2, 0.2, 0.2, 2.0);
-mat4 view = Translate(0.0, 0.0, -0.35);
+//mat4 projection = Frustum(0,0,0,0,0,0);
+;mat4 view = Translate(0.0, 0.0, -0.35);
 mat4 model = Translate(0.0, 0.0, 0.0);
 
 ObjModel *modela, *modelb;
