@@ -11,7 +11,7 @@ GLuint v_model, v_view, v_proj;
 
 class ObjLoader{
     public:
-    static bool loadObj(char* filename){
+    static bool loadObj(char* filename, int f){
         FILE * file = fopen(filename, "r");
         if( file == NULL )
         {
@@ -49,23 +49,43 @@ class ObjLoader{
             else if ( strcmp( lineHeader, "f" ) == 0 )
             {
                 unsigned int vIDX[3], uvIDX[3], nIDX[3];
+                if(f==6){
+                    int matches = fscanf(file, "%d//%d %d//%d %d//%d\n",
+                                 &vIDX[0], &nIDX[0],
+                                 &vIDX[1], &nIDX[1],
+                                 &vIDX[2], &nIDX[2]);
 
-                int matches = fscanf(file, "%d//%d %d//%d %d//%d\n",
-                             &vIDX[0], &nIDX[0],
-                             &vIDX[1], &nIDX[1],
-                             &vIDX[2], &nIDX[2]);
-
-                if(matches!=6)
-                {
-                    printf("failed to read command !\n");
-                    return false;
+                    if(matches!=6)
+                    {
+                        printf("failed to read command !\n");
+                        return false;
+                    }
+                    //obj file index start at 1
+                    for(int a = 0; a<3 ; a++ )
+                    {
+                        vertices.push_back(temp_vertices[vIDX[a]-1]);
+                        normals.push_back(temp_normals[nIDX[a]-1]);
+                        UVs.push_back(vec2(0,0));
+                    }
                 }
-                //obj file index start at 1
-                for(int a = 0; a<3 ; a++ )
-                {
-                    vertices.push_back(temp_vertices[vIDX[a]-1]);
-                    normals.push_back(temp_normals[nIDX[a]-1]);
-                    UVs.push_back(vec2(0,0));
+                else if (f==9){
+                    int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n",
+                         &vIDX[0], &uvIDX[0], &nIDX[0],
+                         &vIDX[1], &uvIDX[1], &nIDX[1],
+                         &vIDX[2], &uvIDX[2], &nIDX[2]);
+
+                    if(matches!=9)
+                    {
+                        printf("failed to read command !\n");
+                        return false;
+                    }
+                    //obj file index start at 1
+                    for(int a = 0; a<3 ; a++ )
+                    {
+                        vertices.push_back(temp_vertices[vIDX[a]-1]);
+                        normals.push_back(temp_normals[nIDX[a]-1]);
+                        UVs.push_back(temp_UVs[uvIDX[a]-1]);
+                    }
                 }
             }
         }
@@ -89,9 +109,9 @@ class ObjModel {
         this->translate = translate;
     }
 
-    void init(){
+    void init(int f){
         start = vertices.size();
-        ObjLoader::loadObj(filename);
+        ObjLoader::loadObj(filename,f);
         count = vertices.size() - start;
         model = translate * Scale(scale, scale, scale);
     }
@@ -107,17 +127,27 @@ GLint transform1;
 
 mat4 projection = Frustum(-0.2, 0.2, -0.2, 0.2, 0.2, 2.0);
 //mat4 projection = Frustum(0,0,0,0,0,0);
+<<<<<<< HEAD
+mat4 view = Translate(0.0, 0.0, -0.35);
+=======
 ;mat4 view = Translate(0.0, 0.0, -0.35);
+>>>>>>> a838bc931bf9c5c6c6873859e49e468913ab95dd
 mat4 model = Translate(0.0, 0.0, 0.0);
 
-ObjModel *modela, *modelb;
+std::vector<ObjModel*> models;
+ObjModel *modela, *modelb, *modelc;
 
 void init( void )
 {
-    modela = new ObjModel("obj/pohon.obj", 0.08, Translate(0,0,0));
-    modelb = new ObjModel("obj/mr_krab.obj", 0.08, Translate(-0.5,-0.5,0));
-    modela->init();
-    modelb->init();
+    modela = new ObjModel("obj/pohon5.obj", 0.08, Translate(0,0,0));
+    modelb = new ObjModel("obj/pohon3.obj", 0.08, Translate(-0.5,-0.5,0));
+    modelc = new ObjModel("obj/mr_krab.obj", 0.08, Translate(0,0,0));
+    modela->init(6);
+    modelb->init(6);
+    modelc->init(9);
+    models.push_back(modela);
+    models.push_back(modelb);
+    models.push_back(modelc);
 
     // Create a vertex array object
     GLuint vao;
@@ -178,9 +208,9 @@ void init( void )
     vec4 light_diffuse( 1.0, 1.0, 1.0, 1.0 );
     vec4 light_specular( 1.0, 1.0, 1.0, 1.0 );
 
-    vec4 material_ambient( 1.0, 0.0, 1.0, 1.0 );
-    vec4 material_diffuse( 1.0, 0.8, 0.0, 1.0 );
-    vec4 material_specular( 1.0, 0.0, 1.0, 1.0 );
+    vec4 material_ambient( 1.0, 1.0, 0.0, 1.0 );
+    vec4 material_diffuse( 1.0, 0.0, 0.8, 1.0 );
+    vec4 material_specular( 1.0, 1.0, 0.0, 1.0 );
     float  material_shininess = 5.0;
 
     vec4 ambient_product = light_ambient * material_ambient;
@@ -210,6 +240,7 @@ void display( void )
 
     modela->draw();
     modelb->draw();
+    modelc->draw();
 
     //glUniformMatrix4fv( v_model, 1, GL_TRUE, model );
     glUniformMatrix4fv( v_view, 1, GL_TRUE, view );
@@ -237,22 +268,30 @@ void keyboard( unsigned char key, int x, int y )
         break;
 
     case 'w': //maju
-        modela->translate[0][3] -= sin(modela->rotateY * DegreesToRadians) * -.01;
-        modela->translate[2][3] += cos(modela->rotateY * DegreesToRadians) * .01;
+        for(int i=0;i<models.size();i++){
+            models[i]->translate[0][3] -= sin(models[i]->rotateY * DegreesToRadians) * -.01;
+            models[i]->translate[2][3] += cos(models[i]->rotateY * DegreesToRadians) * .01;
+        }
         break;
     case 's': //mundur
-        modela->translate[0][3] -= sin(modela->rotateY * DegreesToRadians) * .01;
-        modela->translate[2][3] += cos(modela->rotateY * DegreesToRadians) * -.01;
+        for(int i=0;i<models.size();i++){
+            models[i]->translate[0][3] -= sin(models[i]->rotateY * DegreesToRadians) * .01;
+            models[i]->translate[2][3] += cos(models[i]->rotateY * DegreesToRadians) * -.01;
+        }
         break;
     case 'a':
-        modela->rotateY += 3;
-        modela->translate[0][3] -= sin(modela->rotateY * DegreesToRadians) * -.01;
-        modela->translate[2][3] += cos(modela->rotateY * DegreesToRadians) * .01;
+        for(int i=0;i<models.size();i++){
+            models[i]->rotateY += 3;
+            models[i]->translate[0][3] -= sin(models[i]->rotateY * DegreesToRadians) * -.01;
+            models[i]->translate[2][3] += cos(models[i]->rotateY * DegreesToRadians) * .01;
+        }
         break;
     case 'd':
-        modela->rotateY += -3;
-        modela->translate[0][3] -= sin(modela->rotateY * DegreesToRadians) * -.01;
-        modela->translate[2][3] += cos(modela->rotateY * DegreesToRadians) * .01;
+        for(int i=0;i<models.size();i++){
+            models[i]->rotateY += -3;
+            models[i]->translate[0][3] -= sin(models[i]->rotateY * DegreesToRadians) * -.01;
+            models[i]->translate[2][3] += cos(models[i]->rotateY * DegreesToRadians) * .01;
+        }
         break;
 
     }
