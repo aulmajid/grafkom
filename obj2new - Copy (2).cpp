@@ -125,9 +125,23 @@ class ObjModel {
 
 GLint transform1;
 
+const GLfloat default_radius = 1.0;
+const GLfloat default_zNear = 1.0, default_zFar = 5.0;
+
+// Viewing transformation parameters
+GLfloat radius = default_radius;
+GLfloat theta = 0.0;
+GLfloat phi = 0.0;
+
+const GLfloat  dr = 5.0 * DegreesToRadians;
+
+// Projection transformation parameters
+GLfloat  fovy = 45.0;  // Field-of-view in Y direction angle (in degrees)
+GLfloat  aspect;       // Viewport aspect ratio
+GLfloat  zNear = default_zNear, zFar = default_zFar;
 
 mat4 projection = Frustum(-0.2, 0.2, -0.2, 0.2, 0.1, 2.0);
-mat4 view = Translate(0.0, 0.0, 0.0);
+mat4 view = Translate(0.0, -0.2, -0.5);
 
 std::vector<ObjModel*> models;
 ObjModel *modela, *modelb, *modelc, *modeld;
@@ -243,22 +257,24 @@ void display( void )
     GLfloat angles = 0.001 * glutGet(GLUT_ELAPSED_TIME);
     GLfloat angledegree = (180/3.1416) * angles;
 
+    vec4  eye( radius*sin(theta)*cos(phi),
+                 radius*sin(theta)*sin(phi),
+                 radius*cos(theta),
+                 1.0 );
+    vec4  at( 0.0, 0.0, 0.0, 1.0 );
+    vec4    up( 0.0, 1.0, 0.0, 0.0 );
+
     for(int i=0;i<models.size()-1;i++){
         if(models[i]!=modelc) models[i]->draw(1);
     }
     modelc->draw(angledegree);
 
     //glUniformMatrix4fv( v_model, 1, GL_TRUE, model );
-    glUniformMatrix4fv( v_view, 1, GL_TRUE, view );
-    glUniformMatrix4fv( v_proj, 1, GL_TRUE,projection );
-/*
-    GLfloat angle = 0.001 * glutGet(GLUT_ELAPSED_TIME);
-    mat3 mTransform2 = mat3(cos(angle),   sin(angle),        0.0,
-                        -sin(angle), cos(angle), 0.0,
-	                       0.0, 0.0,  1);
-    glUniformMatrix3fv( transform1, 1, false, mTransform2 );
-*/
-    //glDrawArrays( GL_TRIANGLES, 0,vertices.size());
+    mat4  mv = LookAt( eye, at, up );
+    glUniformMatrix4fv( v_view, 1, GL_TRUE, mv );
+    mat4  p = Perspective( fovy, aspect, zNear, zFar );
+    glUniformMatrix4fv( v_proj, 1, GL_TRUE,p );
+
     glutSwapBuffers();
 }
 
@@ -272,6 +288,15 @@ void keyboard( unsigned char key, int x, int y )
     case 'Q':
         exit( EXIT_SUCCESS );
         break;
+
+    case 'z': zNear  *= 1.1; zFar *= 1.1; break;
+    case 'Z': zNear *= 0.9; zFar *= 0.9; break;
+    case 'r': radius *= 2.0; break;
+    case 'R': radius *= 0.5; break;
+    case 'o': theta += dr; break;
+    case 'O': theta -= dr; break;
+    case 'p': phi += dr; break;
+    case 'P': phi -= dr; break;
 
     case 'i':
         modelc->translate *= Translate(0.0,0.0,0.01);

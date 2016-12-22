@@ -286,19 +286,6 @@ void keyboard( unsigned char key, int x, int y )
         modelc->translate *= Translate(0.01,0.0,0.0);
         break;
 
-    case 't':
-        view *= Translate(0.0,0.0,0.01);
-        break;
-    case 'g':
-        view *= Translate(0.0,0.0,-0.01);
-        break;
-    case 'f':
-        view *= Translate(-0.01,0.0,0.0);
-        break;
-    case 'h':
-        view *= Translate(0.01,0.0,0.0);
-        break;
-
     case 'w': //maju
         for(int i=0;i<models.size();i++){
             models[i]->translate[0][3] -= sin(models[i]->rotateY * DegreesToRadians) * -.01;
